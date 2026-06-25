@@ -1,0 +1,9 @@
+# Dev dependencies
+node_modules
+__pycache__
+env
+
+# Build output
+dist
+
+
