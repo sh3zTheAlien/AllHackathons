@@ -62,7 +62,7 @@ A student community project — **contributors welcome**, especially from UoA. T
 1. **Pick something** from the [issues](../../issues). They're in dependency order, each with a `Depends on: #…` note, so start with one whose dependencies are done. New here? Look for [`good first issue`](../../labels/good%20first%20issue).
 2. **Design before you build (UI).** Check the [`design/`](design) folder. Changing how a screen looks? Sketch a wireframe and float it in Discord `#webdev` first — designs there are a *reference for the idea, not a pixel-perfect spec*.
 3. **Fork → branch → PR.** Most contributors won't have push access: fork, work on a branch, open a pull request. Keep each PR focused on one issue.
-4. **Match what's there** — the existing TypeScript / Tailwind / shadcn patterns on the frontend, and the [API contract (#2)](../../issues/2) for data shapes.
+4. **Match what's there** — the existing TypeScript / Tailwind / shadcn patterns on the frontend, and the [API contract](docs/API.md) for data shapes.
 
 Full guide in **[CONTRIBUTING.md](CONTRIBUTING.md)**. Questions? Join our **[Discord](https://discord.gg/zENTyrbJh)** and chat in `#hackathons` or `#webdev`.
 
