@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
-import HackathonCard from '../components/HackathonCard'
-import SubmitHackathonModal from '../components/SubmitHackathonModal'
-import { sampleHackathons } from '../lib/sample-hackathons'
-import type { Hackathon } from '../lib/types'
+import Header from '../components/layout/Header'
+import Footer from '../components/layout/Footer'
+import HackathonCard from '../components/hackathons/HackathonCard'
+import SubmitHackathonModal from '../components/hackathons/SubmitHackathonModal'
+import { sampleHackathons } from '@/mocks/sample-hackathons'
+import type { Hackathon } from '@/types/hackathon'
 
-const STORAGE_KEY = 'allhackathons'
 const USER_KEY = 'allhackathons_user'
 
 function loadHackathons(): Hackathon[] {

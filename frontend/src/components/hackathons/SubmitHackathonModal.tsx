@@ -5,13 +5,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from './ui/dialog'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Textarea } from './ui/textarea'
-import { Label } from './ui/label'
-import { Switch } from './ui/switch'
-import type { Hackathon } from '../lib/types'
+} from '../ui/dialog'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Textarea } from '../ui/textarea'
+import { Label } from '../ui/label'
+import { Switch } from '../ui/switch'
+import type { Hackathon } from '@/types/hackathon'
 
 interface Props {
   open: boolean
@@ -20,31 +20,35 @@ interface Props {
 }
 
 export default function SubmitHackathonModal({ open, onOpenChange, onSubmit }: Props) {
-  const [topic, setTopic] = useState('')
-  const [date, setDate] = useState('')
-  const [prize, setPrize] = useState(false)
+  const [name, setName] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [hasPrize, setHasPrize] = useState(false)
   const [prizeDetails, setPrizeDetails] = useState('')
   const [location, setLocation] = useState('')
-  const [link, setLink] = useState('')
+  const [url, setUrl] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!topic.trim() || !date.trim()) return
+    const nameTrimmed = name.trim()
+    const urlTrimmed = url.trim()
+    if (!nameTrimmed && !urlTrimmed) return
+    const loc = location.trim()
     onSubmit({
       id: crypto.randomUUID(),
-      topic: topic.trim(),
-      date: date.trim(),
-      prize,
-      prizeDetails: prize ? prizeDetails.trim() : '',
-      location: location.trim(),
-      link: link.trim() || undefined,
+      name: nameTrimmed || urlTrimmed || 'Untitled Hackathon',
+      startDate: startDate.trim() || undefined,
+      hasPrize: hasPrize || undefined,
+      prizeDetails: hasPrize ? prizeDetails.trim() : undefined,
+      location: loc || undefined,
+      url: urlTrimmed || undefined,
+      status: 'published',
     })
-    setTopic('')
-    setDate('')
-    setPrize(false)
+    setName('')
+    setStartDate('')
+    setHasPrize(false)
     setPrizeDetails('')
     setLocation('')
-    setLink('')
+    setUrl('')
     onOpenChange(false)
   }
 
@@ -56,30 +60,28 @@ export default function SubmitHackathonModal({ open, onOpenChange, onSubmit }: P
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="topic">Topic</Label>
+            <Label htmlFor="name">Name</Label>
             <Input
-              id="topic"
+              id="name"
               placeholder="e.g. ETHGlobal Bangkok"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="startDate">Start Date</Label>
             <Input
-              id="date"
+              id="startDate"
               type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="prize">Prize</Label>
-            <Switch id="prize" checked={prize} onCheckedChange={setPrize} />
+            <Label htmlFor="hasPrize">Prize</Label>
+            <Switch id="hasPrize" checked={hasPrize} onCheckedChange={setHasPrize} />
           </div>
-          {prize && (
+          {hasPrize && (
             <div className="space-y-2">
               <Label htmlFor="prizeDetails">Prize Details</Label>
               <Textarea
@@ -100,15 +102,16 @@ export default function SubmitHackathonModal({ open, onOpenChange, onSubmit }: P
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="link">Link</Label>
+            <Label htmlFor="url">Link</Label>
             <Input
-              id="link"
+              id="url"
               placeholder="e.g. https://ethglobal.com"
               type="url"
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
             />
           </div>
+          <p className="text-xs text-muted-foreground">Name or Link is required — fill in as much as you know.</p>
           <DialogFooter>
             <Button type="button" variant="outline" className="cursor-pointer" onClick={() => onOpenChange(false)}>
               Cancel

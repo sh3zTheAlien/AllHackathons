@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
+import Header from '../components/layout/Header'
+import Footer from '../components/layout/Footer'
 import { Button } from '../components/ui/button'
 import { Textarea } from '../components/ui/textarea'
 import { Label } from '../components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import type { FeedbackEntry } from '../lib/types'
+import type { FeedbackEntry } from '@/types/feedback'
 
 const STORAGE_KEY = 'allhackathons_feedback'
 
@@ -68,7 +68,7 @@ export default function Feedback() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <fieldset className="space-y-2">
-                  <Label asChild><legend>Type</legend></Label>
+                  <Label>Type</Label>
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
