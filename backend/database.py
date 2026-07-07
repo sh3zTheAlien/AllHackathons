@@ -21,7 +21,7 @@ class ModeEnum(enum.Enum):
     online = "online"
     hybrid = "hybrid"
 
-class Hackathon(db.Model):
+class Hackathon(db.Model): #db has the model class=Base, we can add another base later for our next table
     __tablename__ = "hackathon"
     id: Mapped[str] = mapped_column(String,primary_key=True)
     name: Mapped[str] = mapped_column(String,nullable=False) #name REQUIRED
@@ -39,3 +39,26 @@ class Hackathon(db.Model):
     submittedAt: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(),nullable=True)
     updatedAt: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(),nullable=True)
     interestCount: Mapped[int] = mapped_column(Integer,nullable=True)
+    
+    
+    def to_dict(self):
+        return{
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "url": self.url,
+            "startDate": self.startDate.isoformat() if self.startDate else None,
+            "endDate": self.endDate.isoformat() if self.endDate else None,
+            "location": self.location,
+            "mode": self.mode.value if self.mode in (ModeEnum.in_person, ModeEnum.online, ModeEnum.hybrid) else None,
+            "organizer": self.organizer,
+            "hasPrize": self.hasPrize,
+            "prizeDetails": self.prizeDetails,
+            "tags": self.tags,
+            "status": self.status.value if self.status in (StatusEnum.draft, StatusEnum.pending, StatusEnum.published, StatusEnum.needs_changes) else None,
+            "submittedAt": self.submittedAt.isoformat() if self.submittedAt else None,
+            "updatedAt": self.updatedAt.isoformat() if self.updatedAt else None,
+            "interestCount": self.interestCount,
+        }
+        
+        

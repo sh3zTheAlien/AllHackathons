@@ -4,7 +4,8 @@ __pycache__
 env
 
 .idea
-instance
+db/
+migrations/
 
 # Build output
 dist
