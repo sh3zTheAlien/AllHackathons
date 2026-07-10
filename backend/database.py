@@ -11,7 +11,7 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 
 class StatusEnum(enum.Enum): # Python feature for creating a fixed set of named constants.
-    draft = "draft"
+    draft = "draft" #name is draft and value is 'draft', they are seperate things but in our case they have the same name
     pending = "pending"
     published = "published"
     needs_changes = "needs-changes"

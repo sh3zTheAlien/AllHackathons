@@ -11,5 +11,6 @@ Keeping requriements.txt file up to date with pipreqs:
 
 Server runs at `http://localhost:8000`.
 
+
 - `GET /health` — `{"status": "ok"}`
 - `GET /ping` — `"Pong!"`
