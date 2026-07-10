@@ -1,14 +1,16 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Float, Boolean, DateTime, Enum
+from sqlalchemy import Integer, String, Float, Boolean, DateTime, Enum, text
 from sqlalchemy.sql import func
-from datetime import datetime
+from datetime import datetime,timedelta
 import enum
 
 class Base(DeclarativeBase):
     pass
 
 db = SQLAlchemy(model_class=Base)
+today = datetime.now().replace(microsecond=0)
+tommorow = today + timedelta(days=1)
 
 class StatusEnum(enum.Enum): # Python feature for creating a fixed set of named constants.
     draft = "draft" #name is draft and value is 'draft', they are seperate things but in our case they have the same name
@@ -27,8 +29,8 @@ class Hackathon(db.Model): #db has the model class=Base, we can add another base
     name: Mapped[str] = mapped_column(String,nullable=False) #name REQUIRED
     description: Mapped[str] = mapped_column(String,nullable=True)
     url: Mapped[str] = mapped_column(String,nullable=False) #official link REQUIRED
-    startDate: Mapped[datetime] = mapped_column(DateTime,nullable=True) # ISO 8601 date (des to meta)
-    endDate: Mapped[datetime] = mapped_column(DateTime,nullable=True) # ISO 8601 date (des to meta)
+    startDate: Mapped[datetime] = mapped_column(DateTime,server_default=text("(CURRENT_TIMESTAMP)"), nullable=True) # ISO 8601 date (des to meta)
+    endDate: Mapped[datetime] = mapped_column(DateTime,server_default=text("(datetime('now', '+1 day'))"),nullable=True) # ISO 8601 date (des to meta)
     location: Mapped[str] = mapped_column(String,nullable=True)
     mode: Mapped[ModeEnum] = mapped_column(Enum(ModeEnum),nullable=True) # sqlalchemy's Enum(ModeEnum) restricts this column to only those values: in-person,online,hybrid
     organizer: Mapped[str] = mapped_column(String,nullable=True)

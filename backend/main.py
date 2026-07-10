@@ -11,6 +11,7 @@ os.makedirs(db_dir,exist_ok=True)
 app = Flask(__name__,instance_path=db_dir)
 app.json.sort_keys = False #prevents alphabetical order when json is returned
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///hackathon.db"
+app.config['ALEMBIC_RENDER_AS_BATCH'] = True
 db.init_app(app)
 
 alembic = Alembic()
@@ -19,7 +20,7 @@ alembic.init_app(app)
 with app.app_context():
     db.create_all()
     
-@app.route("/hackathons/api",methods=['GET','POST']) #future api/hackathons endpoint
+@app.route("/",methods=['GET','POST']) #future api/hackathons endpoint
 def hackathons():
     params = {
         "status" : request.args.get('status'),
@@ -32,7 +33,7 @@ def hackathons():
     
     query = db.session.query(Hackathon) # Arxiko query pou kanei build up stin sinexeia
                                         # me vasi ta params pou exoun epistrafei
-    
+        
     #status parameter
     if params["status"]:
         if (params["status"] in (StatusEnum.draft.value, StatusEnum.pending.value, StatusEnum.published.value, StatusEnum.needs_changes.value)):
@@ -41,12 +42,12 @@ def hackathons():
             return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with a status of {params['status']}. "f"Available parameters for status are: ?status= ('draft' | 'pending' | 'published' | 'needs-changes')"}), 404
     
     #upcoming parameter fix Hackathon.startDate comparing value
-    # if params["upcoming"] == "true":
-    #     query = query.filter(Hackathon.startDate > datetime.now())
-    # elif params["upcoming"] == "false":
-    #     query = query.filter(Hackathon.startDate > datetime.now())
-    # elif params["upcoming"]:
-    #     return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with a status of {params['status']}. "f"Available parameters for upcoming are: ?upcoming= ('true' | 'false')"}), 404
+    if params["upcoming"] == "true":
+        query = query.filter(Hackathon.startDate > datetime.now().replace(microsecond=0))
+    elif params["upcoming"] == "false":
+        query = query.filter(Hackathon.startDate < datetime.now().replace(microsecond=0))
+    elif params["upcoming"]:
+        return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with a status of {params['status']}. "f"Available parameters for upcoming are: ?upcoming= ('true' | 'false')"}), 404
     
     # #past parameter    
     # if params["past"]:
