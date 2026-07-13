@@ -25,7 +25,7 @@ class ModeEnum(enum.Enum):
 
 class Hackathon(db.Model): #db has the model class=Base, we can add another base later for our next table
     __tablename__ = "hackathon"
-    id: Mapped[str] = mapped_column(String,primary_key=True)
+    id: Mapped[str] = mapped_column(String,primary_key=True) #autoincrement increases id number by 1 each time a new hackathon gets added
     name: Mapped[str] = mapped_column(String,nullable=False) #name REQUIRED
     description: Mapped[str] = mapped_column(String,nullable=True)
     url: Mapped[str] = mapped_column(String,nullable=False) #official link REQUIRED

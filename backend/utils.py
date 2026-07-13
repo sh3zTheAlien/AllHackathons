@@ -4,6 +4,7 @@ from main import alembic
 from database import StatusEnum,ModeEnum,db,Hackathon
 from datetime import datetime,timedelta
 from werkzeug.exceptions import NotFound
+import enum
 
 
 today = datetime.now().replace(microsecond=0)
@@ -40,7 +41,7 @@ def upgrade():
     with app.app_context():
         alembic.upgrade()
 
-def add_row(id=None,name=None,url=None,startDate=today,endDate=tommorow,location=None,mode=None,organizer=None,hasPrize : bool = None, prizeDetails = None, tags=None,status = None,submittedAt=today,updatedAt=today,interestCount : int = 0):
+def add_row(id=None,name=None,url=None,description=None,startDate=today,endDate=tommorow,location=None,mode=None,organizer=None,hasPrize : bool = None, prizeDetails = None, tags=None,status = None,submittedAt=today,updatedAt=today,interestCount : int = 0):
     
     """"
     Manually add a row in Hackathons table.
@@ -64,56 +65,66 @@ def add_row(id=None,name=None,url=None,startDate=today,endDate=tommorow,location
             raise ValueError(f"Wrong status name: {status}")
     
     with app.app_context():
-        new_hackathon = Hackathon(id=id,name=name,url=url,startDate=startDate,endDate=endDate,location=location,mode=mode,
+        new_hackathon = Hackathon(id=id,name=name,url=url,description=description,startDate=startDate,endDate=endDate,location=location,mode=mode,
                                   organizer=organizer,hasPrize=hasPrize,prizeDetails=prizeDetails,tags=tags,status=status,
                                   submittedAt=submittedAt,updatedAt=updatedAt,interestCount=interestCount)
         db.session.add(new_hackathon)
         db.session.commit()
         print(f"Successfully added row with an id: {id} , name: {name} , url: {url}.")
 
-def update_row(id,name=None,url=None,startDate=None,endDate=None,location=None,mode=None,organizer=None,hasPrize : bool = None, prizeDetails = None, tags=None,status = None,updatedAt=today,interestCount : int = None):
+def check_constant_value(constant,constantEnum:enum.EnumMeta):
+    if constant is not None: #testing if status contains one of the desired values
+        try:
+            status = constantEnum(status)
+        except ValueError:
+            raise ValueError(f"Wrong status name: {status}")
+    return None
+
+def update_row(id,**kwargs):
+    allowed = ['name','url','startDate','endDate','location','mode',
+               'organizer','hasPrize','prizeDetails','tags','status','interestCount']
     
     """"
     Manually update a row in Hackathons table.
     This function was implemented for test purposes only.
-    Note: id is require for the function to properly work.
+    Note: id parameter is required for the function to properly work.
     """
     
     if not(id):
         raise ValueError("Sorry id param is required.")
     
-    if mode is not None: #testing if mode contains one of the desired values
-        try:
-            mode = ModeEnum(mode)  #converts string "online" to ModeEnum.online
-        except ValueError:
-            raise ValueError(f"Wrong mode name: {mode}")
-
-    if status is not None: #testing if status contains one of the desired values
-        try:
-            status = StatusEnum(status)
-        except ValueError:
-            raise ValueError(f"Wrong status name: {status}")
-    
     with app.app_context():
         try:
-            hackathon_to_update = db.get_or_404(Hackathon,id) #id is unique so .first() doesnt affect anywhere
-            hackathon_to_update.name = name if name is not None else hackathon_to_update.name
-            hackathon_to_update.url = url if url is not None else hackathon_to_update.url
-            hackathon_to_update.startDate = startDate if startDate is not None else hackathon_to_update.startDate
-            hackathon_to_update.endDate = endDate if endDate is not None else hackathon_to_update.endDate
-            hackathon_to_update.location = location if location is not None else hackathon_to_update.location
-            hackathon_to_update.mode = mode
-            hackathon_to_update.organizer = organizer if organizer is not None else hackathon_to_update.organizer
-            hackathon_to_update.hasPrize = hasPrize if hasPrize is not None else hackathon_to_update.hasPrize
-            hackathon_to_update.prizeDetails = prizeDetails if prizeDetails is not None else hackathon_to_update.prizeDetails
-            hackathon_to_update.tags = tags if tags is not None else hackathon_to_update.tags
-            hackathon_to_update.status = status
-            hackathon_to_update.interestCount = interestCount if interestCount is not None else hackathon_to_update.interestCount
-            db.session.commit()
-            print(f"Successfully updated row with an id: {id}.")
+            hackathon_to_update = db.get_or_404(Hackathon,id) 
             
+            for key , value in kwargs.items():
+                if key in allowed and value is not None:
+                    
+                    if key == "mode":
+                        try:
+                            ModeEnum(value)  #converts string "online" to ModeEnum.online
+                        except ValueError:
+                            raise ValueError(f"Wrong mode name: {key}")
+                        
+                    elif key == "status":
+                        try:
+                            StatusEnum(value)
+                        except ValueError:
+                            raise ValueError(f"Wrong status name: {key}")
+                        
+                    setattr(hackathon_to_update, key,value)
+                    print(f"Successfully updated {key} with a value of {str(value)}!")
+                    #Why are we using setattr() here:
+                    #The issue is that hackathon_to_update.key = value sets a literal attribute 
+                    # named key on the object,it doesn't use the value of our key variable
+                    # To dynamically set an attribute using a variable name, use the setattr() method.
+
+            hackathon_to_update.updatedAt = today
+            db.session.commit()
+
         except NotFound:
             raise ValueError(f"Sorry there is no hackathon with an id: {id} to update.")
+            
         
 def delete_row(id):
     
@@ -200,7 +211,7 @@ def main():
     parser.add_argument("--url", type=str)
     
     #datetime type is not gonna work so we have to make it str first and then convert it to datetime
-    
+    parser.add_argument("--description", type=str, default=None)
     parser.add_argument("--startDate", type=str, default=None,help="Format: YYYY-MM-DD HH:MM:SS")
     parser.add_argument("--endDate", type=str, default=None,help="Format: YYYY-MM-DD HH:MM:SS")
     parser.add_argument("--submittedAt", type=str, default=None)
@@ -218,13 +229,28 @@ def main():
     args = parser.parse_args() #reads the actual text the user typed after the script name in the terminal
                                #and matches it against all the args that we have defined except (--help)
 
-    startDate = datetime.strptime(args.startDate, "%Y-%m-%d %H:%M:%S") if args.startDate else today
-    endDate = datetime.strptime(args.endDate, "%Y-%m-%d %H:%M:%S") if args.endDate else tommorow
-    if args.submittedAt: 
-        submittedAt = datetime.strptime(args.submittedAt, "%Y-%m-%d %H:%M:%S") 
+    startDate = datetime.strptime(args.startDate, "%Y-%m-%d %H:%M:%S") if args.startDate else None
+    endDate = datetime.strptime(args.endDate, "%Y-%m-%d %H:%M:%S") if args.endDate else None
+    submittedAt = datetime.strptime(args.submittedAt, "%Y-%m-%d %H:%M:%S") if args.submittedAt else None
+    updatedAt = datetime.strptime(args.updatedAt, "%Y-%m-%d %H:%M:%S") if args.updatedAt else None
     
-    if args.updatedAt:
-        updatedAt = datetime.strptime(args.updatedAt, "%Y-%m-%d %H:%M:%S")  
+    kwargs = {
+        "name": args.name,
+        "url": args.url,
+        "description":args.description,
+        "location": args.location,
+        "startDate": startDate,
+        "endDate": endDate,
+        "updatedAt": updatedAt,
+        "submittedAt": submittedAt,
+        "mode": args.mode,
+        "organizer": args.organizer,
+        "hasPrize": args.hasPrize,
+        "prizeDetails": args.prizeDetails,
+        "tags": args.tags,
+        "status": args.status,
+        "interestCount": args.interestCount,
+    }    
     
     if args.delete_all_rows:
         return delete_all_rows()
@@ -234,7 +260,7 @@ def main():
         
     if args.add_row:
         return add_row(
-            id=args.id, name=args.name, url=args.url,
+            id=args.id, name=args.name, url=args.url,description=args.description,
             startDate=startDate, endDate=endDate,
             updatedAt=today,submittedAt=today,
             location=args.location, mode=args.mode, organizer=args.organizer,
@@ -243,14 +269,8 @@ def main():
         )
     
     if args.update_row:
-        return update_row(
-            id=args.id,name=args.name,url=args.url,
-            startDate=startDate, endDate=endDate,updatedAt=today,
-            location=args.location, mode=args.mode, organizer=args.organizer,
-            hasPrize=args.hasPrize, prizeDetails=args.prizeDetails, tags=args.tags,
-            status=args.status,interestCount=args.interestCount)
+        return update_row(id=args.id,**kwargs)
     
-   
     if args.migrate: #if args.wipe doesnt exist it returns None and if gets skipped 
         return migrate()
     
