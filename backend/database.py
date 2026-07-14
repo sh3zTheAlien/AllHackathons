@@ -25,12 +25,12 @@ class ModeEnum(enum.Enum):
 
 class Hackathon(db.Model): #db has the model class=Base, we can add another base later for our next table
     __tablename__ = "hackathon"
-    id: Mapped[str] = mapped_column(String,primary_key=True) #autoincrement increases id number by 1 each time a new hackathon gets added
+    id: Mapped[str] = mapped_column(Integer,primary_key=True,autoincrement=True) #autoincrement increases id number by 1 each time a new hackathon gets added
     name: Mapped[str] = mapped_column(String,nullable=False) #name REQUIRED
     description: Mapped[str] = mapped_column(String,nullable=True)
     url: Mapped[str] = mapped_column(String,nullable=False) #official link REQUIRED
-    startDate: Mapped[datetime] = mapped_column(DateTime,server_default=text("(CURRENT_TIMESTAMP)"), nullable=True) # ISO 8601 date (des to meta)
-    endDate: Mapped[datetime] = mapped_column(DateTime,server_default=text("(datetime('now', '+1 day'))"),nullable=True) # ISO 8601 date (des to meta)
+    startDate: Mapped[datetime] = mapped_column(DateTime, nullable=True) # ISO 8601 date (des to meta)
+    endDate: Mapped[datetime] = mapped_column(DateTime,nullable=True) # ISO 8601 date (des to meta)
     location: Mapped[str] = mapped_column(String,nullable=True)
     mode: Mapped[ModeEnum] = mapped_column(Enum(ModeEnum),nullable=True) # sqlalchemy's Enum(ModeEnum) restricts this column to only those values: in-person,online,hybrid
     organizer: Mapped[str] = mapped_column(String,nullable=True)
