@@ -81,8 +81,8 @@ def check_constant_value(constant,constantEnum:enum.EnumMeta):
     return None
 
 def update_row(id,**kwargs):
-    allowed = ['name','url','startDate','endDate','location','mode',
-               'organizer','hasPrize','prizeDetails','tags','status','interestCount']
+    allowed = ["name", "url", "description", "startDate", "endDate", "updatedAt", "submittedAt", "location", "mode",
+           "organizer", "hasPrize", "prizeDetails", "tags", "status", "interestCount"]
     
     """"
     Manually update a row in Hackathons table.

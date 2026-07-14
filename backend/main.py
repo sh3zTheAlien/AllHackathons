@@ -7,6 +7,8 @@ import os
 
 today = datetime.now().replace(microsecond=0)
 tommorow = today + timedelta(days=1)
+allowed = ["name", "url", "description", "startDate", "endDate", "updatedAt", "submittedAt", "location", "mode",
+           "organizer", "hasPrize", "prizeDetails", "tags", "status", "interestCount"]
 
 db_dir = os.path.abspath("./db")
 os.makedirs(db_dir,exist_ok=True)
@@ -97,144 +99,124 @@ def find_hackathon(hackathon_id):
     except NotFound:
         return jsonify(error={"Hackathon Not Found":f"Sorry, there is no hackathon with an id of {hackathon_id}."}),404
 
+def parse_parameters(method:str):
+    now = datetime.now().replace(microsecond=0)
+    
+    if method == "POST":
+        params = {
+            "name": request.form.get("name") or None,
+            "url": request.form.get("url") or None,
+            "description": request.form.get("description") or None,
+            "organizer": request.form.get("organizer") or None,
+            "status": request.form.get("status") or None,
+            "mode": request.form.get("mode") or None,
+            "tags": request.form.get("tags") or None,
+            "startDate": datetime.strptime(request.form.get("startDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("startDate") else None,
+            "endDate": datetime.strptime(request.form.get("endDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("endDate") else None,
+            "location": request.form.get("location") or None,
+            "hasPrize": request.form.get("hasPrize") or None,
+            "prizeDetails": request.form.get("prizeDetails") or None,
+            "submittedAt": now,
+            "updatedAt": now,
+            "interestCount": 0,
+        }
+    elif method == "PATCH":
+        params = {
+            "name": request.form.get("name") or None,
+            "url": request.form.get("url") or None,
+            "description": request.form.get("description") or None,
+            "organizer": request.form.get("organizer") or None,
+            "status": request.form.get("status") or None,
+            "mode": request.form.get("mode") or None,
+            "tags": request.form.get("tags") or None,
+            "startDate": datetime.strptime(request.form.get("startDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("startDate") else None,
+            "endDate": datetime.strptime(request.form.get("endDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("endDate") else None,
+            "location": request.form.get("location") or None,
+            "hasPrize": request.form.get("hasPrize") or None,
+            "prizeDetails": request.form.get("prizeDetails") or None,
+            "submittedAt": request.form.get("submittedAt") or None,
+            "updatedAt": now,
+            "interestCount": request.form.get("interestCount"),
+        }
+    return params
+
 @app.route("/api/hackathons",methods=["POST"])
 def add_hackathon():
-    if request.method == "POST":
+    
+    params = parse_parameters(request.method)
+    
+    if (params["name"] is None) or (params["url"] is None):
+        return jsonify(error={"Missing Fields": "name and url are required."}),400
+    
+    for key,value in params.items():
         
-        #params
-        name = request.form.get("name") 
-        url = request.form.get("url") 
-        description = request.form.get("description") or None
-        organizer = request.form.get("organizer") or None
-        status = request.form.get("status") or None
-        mode = request.form.get("mode") or None
-        tags = request.form.get("tags") or None
-        startDate = datetime.strptime(request.form.get("startDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("startDate") else None
-        endDate = datetime.strptime(request.form.get("endDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("endDate") else None
-        location = request.form.get("location") or None
-        hasPrize = request.form.get("hasPrize") or None
-        prizeDetails = request.form.get("prizeDetails") or None
-        submittedAt = datetime.now().replace(microsecond=0)
-        updatedAt = datetime.now().replace(microsecond=0)
-        interestCount = 0
+        if (key in allowed):
+            if key == "mode" and value is not None:
+                try:
+                    value = ModeEnum(value)  #converts string "online" to ModeEnum.online
+                except ValueError:
+                    return jsonify(error={"error":f"Wrong mode name: {value}"}),400
+                
+            if key == "status" and value is not None:
+                try:
+                    value = StatusEnum(value)
+                except ValueError:
+                    return jsonify(error={"error":f"Wrong status name: {value}"}),400
+            
+            if key == "hasPrize" and value is not None:
+                if value.lower() == "true":
+                    params[key] = True
+                elif value.lower() == "false":
+                    params[key] = False
+                else:
+                    return jsonify(error={"error":f"Wrong hasPrize name: {value}."}), 400
+    
+    with app.app_context():
+        new_hackathon = Hackathon(name=params["name"],url=params["url"],description=params["description"],startDate=params["startDate"],endDate=params["endDate"],location=params["location"],mode=params["mode"],
+                                organizer=params["organizer"],hasPrize=params["hasPrize"],prizeDetails=params["prizeDetails"],tags=params["tags"],status=params["status"],
+                                submittedAt=params["submittedAt"],updatedAt=params["updatedAt"],interestCount=params["interestCount"])
+        db.session.add(new_hackathon)
+        db.session.commit()
+    return jsonify(response={"success":f"Successfully added hackathon:{params["name"]}!"}), 200
 
-        #params validation
-        if not(name) or not(url):
-            return jsonify(error={"Missing Fields": "name and url are required."}),400
-        
-        if mode is not None: #testing if mode contains one of the desired values
-            try:
-                mode = ModeEnum(mode)  #converts string "online" to ModeEnum.online
-            except ValueError:
-                #raise ValueError(f"Wrong mode name: {mode}")
-                return jsonify(error={"error":f"Wrong mode name: {mode}"}),400
-
-        if status is not None: #testing if status contains one of the desired values
-            try:
-                status = StatusEnum(status)
-            except ValueError:
-                return jsonify(error={"error":f"Wrong status name: {status}."}),400
-        
-        
-        if hasPrize:
-            if hasPrize.lower() == "true":
-                value = True
-            elif hasPrize.lower() == "false":
-                value = False
-            else:
-                return jsonify(error={"error":f"Wrong hasPrize name: {hasPrize}."}), 400
-      
-        #adding hackathon    
-        with app.app_context():
-            new_hackathon = Hackathon(name=name,url=url,description=description,startDate=startDate,endDate=endDate,location=location,mode=mode,
-                                    organizer=organizer,hasPrize=value,prizeDetails=prizeDetails,tags=tags,status=status,
-                                    submittedAt=submittedAt,updatedAt=updatedAt,interestCount=interestCount)
-            db.session.add(new_hackathon)
-            db.session.commit()
-        return jsonify(response={"success":f"Successfully added hackathon:{name}!"}), 200
 
 @app.route("/api/<hackathon_id>",methods=['PATCH']) #future api/hackathons endpoint
 def update_hackathon(hackathon_id):
     
-    if request.method == "PATCH":
-        #parsing params
-        name = request.form.get("name") or None
-        url = request.form.get("url") or None
-        description = request.form.get("description") or None
-        organizer = request.form.get("organizer") or None
-        status = request.form.get("status") or None
-        mode = request.form.get("mode") or None
-        tags = request.form.get("tags") or None
-        startDate = datetime.strptime(request.form.get("startDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("startDate") else None
-        endDate = datetime.strptime(request.form.get("endDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("endDate") else None
-        location = request.form.get("location") or None
-        hasPrize = request.form.get("hasPrize") or None
-        prizeDetails = request.form.get("prizeDetails") or None
-        submittedAt = request.form.get("submittedAt") or None
-        updatedAt = datetime.now().replace(microsecond=0)
-        interestCount = request.form.get("interestCount")
-        
-        #validating params
-        if not(id):
-            return jsonify(error={"Missing Fields": "id is required."}),400
-        
-        if mode is not None: #testing if mode contains one of the desired values
-            try:
-                mode = ModeEnum(mode)  #converts string "online" to ModeEnum.online
-            except ValueError:
-                
-                return jsonify(error={"error":f"Wrong mode name: {mode}"}),400
+    params = parse_parameters(request.method)
+    
+    if not(id):
+        return jsonify(error={"Missing Fields": "id is required."}),400
+    
+    with app.app_context(): 
+        try:
+            hackathon_to_update = db.get_or_404(Hackathon,hackathon_id)
+            for key , value in params.items():
+                if (key in allowed) and value is not None:
+                    if key == "mode":
+                        try:
+                            value = ModeEnum(value)  #converts string "online" to ModeEnum.online
+                        except ValueError:
+                            return jsonify(error={"error":f"Wrong mode name: {value}"}),400
+                        
+                    elif key == "status":
+                        try:
+                            value = StatusEnum(value)
+                        except ValueError:
+                            return jsonify(error={"error":f"Wrong status name: {value}"}),400
+                    
+                    elif key == "hasPrize":
+                        if value.lower() == "true":
+                            params[key] = True
+                        elif value.lower() == "false":
+                            params[key] = False
+                        else:
+                            return jsonify(error={"error":f"Wrong hasPrize name: {value}."}), 400
 
-        if status is not None: #testing if status contains one of the desired values
-            try:
-                status = StatusEnum(status)
-            except ValueError:
-                return jsonify(error={"error":f"Wrong status name: {status}"}),400
-        
-        value = None
-        if hasPrize:
-            if hasPrize.lower() == "true":
-                value = True
-            elif hasPrize.lower() == "false":
-                value = False
-            else:
-                return jsonify(error={"error":f"Wrong hasPrize name: {hasPrize}."}), 400
-        
-        with app.app_context(): 
-            try:
-                hackathon_to_update = db.get_or_404(Hackathon,hackathon_id)
-                if name is not None:
-                    hackathon_to_update.name = name 
-                if url is not None:
-                    hackathon_to_update.url = url
-                if description is not None:
-                    hackathon_to_update.description = description
-                if organizer is not None:
-                    hackathon_to_update.organizer = organizer
-                if status is not None:
-                    hackathon_to_update.status = status
-                if mode is not None:
-                    hackathon_to_update.mode = mode
-                if tags is not None:
-                    hackathon_to_update.tags = tags
-                if startDate is not None:
-                    hackathon_to_update.startDate = startDate
-                if endDate is not None:
-                    hackathon_to_update.endDate = endDate
-                if location is not None:
-                    hackathon_to_update.location = location
-                if hasPrize is not None:
-                    hackathon_to_update.hasPrize = bool(hasPrize)
-                if prizeDetails is not None:
-                    hackathon_to_update.prizeDetails = prizeDetails
-                if submittedAt is not None:
-                    hackathon_to_update.submittedAt = submittedAt
-                if interestCount is not None:
-                    hackathon_to_update.interestCount = interestCount
-                
-                hackathon_to_update.updatedAt = updatedAt
-                db.session.commit()
-                return jsonify(response={"Success":f"Successfully updated hackathon with an id of : {hackathon_id}"}),200
-                
-            except NotFound:
-                return jsonify(error={"Hackathon Not Found":f"Sorry, there is no hackathon with an id of {id}."}),404
+                    setattr(hackathon_to_update, key,value)
+                    
+            db.session.commit()
+            return jsonify(response={"Success":f"Successfully updated hackathon with an id of : {hackathon_id}"}),200
+            
+        except NotFound:
+            return jsonify(error={"Hackathon Not Found":f"Sorry, there is no hackathon with an id of {id}."}),404
