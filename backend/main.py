@@ -95,9 +95,10 @@ def all_hackathons():
 def find_hackathon(hackathon_id):
     try:
         hackathon = db.get_or_404(Hackathon, hackathon_id)
+        print(type(hackathon.startDate))
         return jsonify(hackathon.to_dict())
     except NotFound:
-        return jsonify(error={"Hackathon Not Found":f"Sorry, there is no hackathon with an id of {hackathon_id}."}),404
+        return jsonify(error={"Hackathon Not Found":"Wrong id"}),404
 
 def parse_parameters(method:str):
     now = datetime.now().replace(microsecond=0)
@@ -140,45 +141,41 @@ def parse_parameters(method:str):
         }
     return params
 
-@app.route("/api/hackathons",methods=["POST"])
-def add_hackathon():
-    
-    params = parse_parameters(request.method)
-    
-    if (params["name"] is None) or (params["url"] is None):
-        return jsonify(error={"Missing Fields": "name and url are required."}),400
-    
+def validate_parameters(params:dict,method:str,hackathon_to_update:Hackathon = None):
     for key,value in params.items():
         
-        if (key in allowed):
-            if key == "mode" and value is not None:
+        if (key in allowed) and value is not None:
+            if key == "mode":
                 try:
                     value = ModeEnum(value)  #converts string "online" to ModeEnum.online
                 except ValueError:
-                    return jsonify(error={"error":f"Wrong mode name: {value}"}),400
+                    return False,"Wrong mode"
                 
-            if key == "status" and value is not None:
+            if key == "status":
                 try:
                     value = StatusEnum(value)
                 except ValueError:
-                    return jsonify(error={"error":f"Wrong status name: {value}"}),400
+                    return False,"Wrong status"
             
-            if key == "hasPrize" and value is not None:
+            if key == "hasPrize":
                 if value.lower() == "true":
+                    value = True
                     params[key] = True
                 elif value.lower() == "false":
+                    value = False
                     params[key] = False
                 else:
-                    return jsonify(error={"error":f"Wrong hasPrize name: {value}."}), 400
-    
-    with app.app_context():
-        new_hackathon = Hackathon(name=params["name"],url=params["url"],description=params["description"],startDate=params["startDate"],endDate=params["endDate"],location=params["location"],mode=params["mode"],
-                                organizer=params["organizer"],hasPrize=params["hasPrize"],prizeDetails=params["prizeDetails"],tags=params["tags"],status=params["status"],
-                                submittedAt=params["submittedAt"],updatedAt=params["updatedAt"],interestCount=params["interestCount"])
-        db.session.add(new_hackathon)
-        db.session.commit()
-    return jsonify(response={"success":f"Successfully added hackathon:{params["name"]}!"}), 200
+                    return False,"Wrong hasPrize"
+            
+            #Dates Validation
 
+            if hackathon_to_update:
+                setattr(hackathon_to_update, key,value)
+                
+    if method == "PATCH":
+        return True,None
+    if method == "POST":
+        return True,params
 
 @app.route("/api/<hackathon_id>",methods=['PATCH']) #future api/hackathons endpoint
 def update_hackathon(hackathon_id):
@@ -191,32 +188,31 @@ def update_hackathon(hackathon_id):
     with app.app_context(): 
         try:
             hackathon_to_update = db.get_or_404(Hackathon,hackathon_id)
-            for key , value in params.items():
-                if (key in allowed) and value is not None:
-                    if key == "mode":
-                        try:
-                            value = ModeEnum(value)  #converts string "online" to ModeEnum.online
-                        except ValueError:
-                            return jsonify(error={"error":f"Wrong mode name: {value}"}),400
-                        
-                    elif key == "status":
-                        try:
-                            value = StatusEnum(value)
-                        except ValueError:
-                            return jsonify(error={"error":f"Wrong status name: {value}"}),400
-                    
-                    elif key == "hasPrize":
-                        if value.lower() == "true":
-                            params[key] = True
-                        elif value.lower() == "false":
-                            params[key] = False
-                        else:
-                            return jsonify(error={"error":f"Wrong hasPrize name: {value}."}), 400
-
-                    setattr(hackathon_to_update, key,value)
-                    
-            db.session.commit()
-            return jsonify(response={"Success":f"Successfully updated hackathon with an id of : {hackathon_id}"}),200
-            
+            result , error = validate_parameters(params,request.method,hackathon_to_update)
+            if result and not(error):
+                db.session.commit()
+                return jsonify(response={"Success":f"Successfully updated hackathon with an id of : {hackathon_id}"}),200
+            else:
+                return jsonify(error={"error":f"{error}"}),400    
         except NotFound:
-            return jsonify(error={"Hackathon Not Found":f"Sorry, there is no hackathon with an id of {id}."}),404
+            return jsonify(error={"Hackathon Not Found":f"Wrong id"}),404
+    
+@app.route("/api/hackathons",methods=["POST"])
+def add_hackathon():
+    
+    params = parse_parameters(request.method)
+    
+    if (params["name"] is None) or (params["url"] is None):
+        return jsonify(error={"Missing Fields": "name and url are required."}),400
+    
+    result , value = validate_parameters(params,request.method,None)
+    if result:
+        with app.app_context():
+            new_hackathon = Hackathon(name=value["name"],url=value["url"],description=value["description"],startDate=value["startDate"],endDate=value["endDate"],location=value["location"],mode=value["mode"],
+                                    organizer=value["organizer"],hasPrize=value["hasPrize"],prizeDetails=value["prizeDetails"],tags=value["tags"],status=value["status"],
+                                    submittedAt=value["submittedAt"],updatedAt=value["updatedAt"],interestCount=value["interestCount"])
+            db.session.add(new_hackathon)
+            db.session.commit()
+            return jsonify(response={"success":f"Successfully added hackathon:{value["name"]}!"})
+    else:
+        return jsonify(error={"error":f"{value}"}),400
