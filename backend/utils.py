@@ -142,6 +142,18 @@ def delete_row(id):
         db.session.delete(hackathon_to_delete)
         db.session.commit()
         print(f"Successfully deleted row with an id: {id}.")
+
+
+#not ready yet
+def delete_rows(ids:list):
+    if not(ids):
+        raise ValueError("Sorry ids parameter is required")
+    
+    with app.app_context():
+        for id in ids:
+            hackathon_to_delete = Hackathon.query.filter_by(id=id).first() #id is unique so .first() doesnt affect anywhere
+            db.session.delete(hackathon_to_delete)
+        db.session.commit()
         
 def delete_all_rows():
     

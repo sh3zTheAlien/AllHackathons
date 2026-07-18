@@ -102,6 +102,11 @@ def find_hackathon(hackathon_id):
 
 def parse_parameters(method:str):
     now = datetime.now().replace(microsecond=0)
+    try:
+        startDate = datetime.strptime(request.form.get("startDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("startDate") else None
+        endDate = datetime.strptime(request.form.get("endDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("endDate") else None
+    except ValueError:
+        return False,"Wrong date format"
     
     if method == "POST":
         params = {
@@ -112,8 +117,8 @@ def parse_parameters(method:str):
             "status": request.form.get("status") or None,
             "mode": request.form.get("mode") or None,
             "tags": request.form.get("tags") or None,
-            "startDate": datetime.strptime(request.form.get("startDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("startDate") else None,
-            "endDate": datetime.strptime(request.form.get("endDate"), "%Y-%m-%d %H:%M:%S") if request.form.get("endDate") else None,
+            "startDate": startDate,
+            "endDate": endDate,
             "location": request.form.get("location") or None,
             "hasPrize": request.form.get("hasPrize") or None,
             "prizeDetails": request.form.get("prizeDetails") or None,
@@ -139,7 +144,7 @@ def parse_parameters(method:str):
             "updatedAt": now,
             "interestCount": request.form.get("interestCount"),
         }
-    return params
+    return True,params
 
 def validate_parameters(params:dict,method:str,hackathon_to_update:Hackathon = None):
     for key,value in params.items():
@@ -164,10 +169,9 @@ def validate_parameters(params:dict,method:str,hackathon_to_update:Hackathon = N
                 elif value.lower() == "false":
                     value = False
                     params[key] = False
+                    params["prizeDetails"] = None #prizeDetails is None anyways IF hackathon doesnt have a prize
                 else:
                     return False,"Wrong hasPrize"
-            
-            #Dates Validation
 
             if hackathon_to_update:
                 setattr(hackathon_to_update, key,value)
@@ -180,39 +184,49 @@ def validate_parameters(params:dict,method:str,hackathon_to_update:Hackathon = N
 @app.route("/api/<hackathon_id>",methods=['PATCH']) #future api/hackathons endpoint
 def update_hackathon(hackathon_id):
     
-    params = parse_parameters(request.method)
+    result , value = parse_parameters(request.method)
+    
+    if result:
+        params = value
+    else:
+        return jsonify(error={"error":f"{value}"}),400
     
     if not(id):
         return jsonify(error={"Missing Fields": "id is required."}),400
     
-    with app.app_context(): 
-        try:
-            hackathon_to_update = db.get_or_404(Hackathon,hackathon_id)
-            result , error = validate_parameters(params,request.method,hackathon_to_update)
-            if result and not(error):
-                db.session.commit()
-                return jsonify(response={"Success":f"Successfully updated hackathon with an id of : {hackathon_id}"}),200
-            else:
-                return jsonify(error={"error":f"{error}"}),400    
-        except NotFound:
-            return jsonify(error={"Hackathon Not Found":f"Wrong id"}),404
+    #with app.app_context(): 
+    try:
+        hackathon_to_update = db.get_or_404(Hackathon,hackathon_id)
+        result , error = validate_parameters(params,request.method,hackathon_to_update)
+        if result and not(error):
+            db.session.commit()
+            return jsonify(response={"Success":f"Successfully updated hackathon with an id of : {hackathon_id}"}),200
+        else:
+            return jsonify(error={"error":f"{error}"}),400    
+    except NotFound:
+        return jsonify(error={"Hackathon Not Found":f"Wrong id"}),404
     
 @app.route("/api/hackathons",methods=["POST"])
 def add_hackathon():
     
-    params = parse_parameters(request.method)
+    result , value = parse_parameters(request.method)
+    
+    if result:
+        params = value
+    else:
+        return jsonify(error={"error":f"{value}"}),400
     
     if (params["name"] is None) or (params["url"] is None):
         return jsonify(error={"Missing Fields": "name and url are required."}),400
     
     result , value = validate_parameters(params,request.method,None)
     if result:
-        with app.app_context():
-            new_hackathon = Hackathon(name=value["name"],url=value["url"],description=value["description"],startDate=value["startDate"],endDate=value["endDate"],location=value["location"],mode=value["mode"],
-                                    organizer=value["organizer"],hasPrize=value["hasPrize"],prizeDetails=value["prizeDetails"],tags=value["tags"],status=value["status"],
-                                    submittedAt=value["submittedAt"],updatedAt=value["updatedAt"],interestCount=value["interestCount"])
-            db.session.add(new_hackathon)
-            db.session.commit()
-            return jsonify(response={"success":f"Successfully added hackathon:{value["name"]}!"})
+        #with app.app_context():
+        new_hackathon = Hackathon(name=value["name"],url=value["url"],description=value["description"],startDate=value["startDate"],endDate=value["endDate"],location=value["location"],mode=value["mode"],
+                                organizer=value["organizer"],hasPrize=value["hasPrize"],prizeDetails=value["prizeDetails"],tags=value["tags"],status=value["status"],
+                                submittedAt=value["submittedAt"],updatedAt=value["updatedAt"],interestCount=value["interestCount"])
+        db.session.add(new_hackathon)
+        db.session.commit()
+        return jsonify(response={"success":f"Successfully added hackathon:{value["name"]}!"})
     else:
         return jsonify(error={"error":f"{value}"}),400
