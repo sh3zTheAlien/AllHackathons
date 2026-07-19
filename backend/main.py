@@ -24,81 +24,6 @@ alembic.init_app(app)
 
 with app.app_context():
     db.create_all()
-    
-@app.route("/api/hackathons",methods=["GET"])    
-def all_hackathons():
-    if request.method == "GET":
-        now = datetime.now().replace(microsecond=0) #Formats time like this: YYYY-MM-DD HH:MM:SS example: 2026-05-01 15:12:00
-        
-        params = {
-            "status" : request.args.get('status'),
-            "upcoming" : request.args.get('upcoming'),
-            "past" : request.args.get('past'),
-            "tags" : request.args.get('tags'),
-            "q" : request.args.get('q'),
-            "sort" : request.args.get('sort')
-        }
-        
-        query = db.session.query(Hackathon) # Arxiko query pou kanei build up stin sinexeia
-                                            # me vasi ta params pou exoun epistrafei
-            
-        #status parameter
-        if params["status"]:
-            if (params["status"] in (StatusEnum.draft.value, StatusEnum.pending.value, StatusEnum.published.value, StatusEnum.needs_changes.value)):
-                query = query.filter(Hackathon.status == params["status"])
-            else:
-                return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with a status of {params['status']}. "f"Available parameters for status are: ?status= ('draft' | 'pending' | 'published' | 'needs-changes')"}), 404
-        
-        #upcoming parameter fix Hackathon.startDate comparing value
-        if params["upcoming"] == "true":
-            query = query.filter(Hackathon.startDate > now)
-        elif params["upcoming"] == "false":
-            query = query.filter(Hackathon.startDate < now)
-        elif params["upcoming"]:
-            return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with an upcoming value of {params["upcoming"]}. "f"Available parameters for upcoming are: ?upcoming= ('true' | 'false')"}), 404
-        
-        #past parameter    
-        if params["past"] == "true":
-            query = query.filter(Hackathon.startDate < now)
-        elif params["past"] == "false":
-            query = query.filter(Hackathon.startDate > now)
-        elif params["past"]:
-            return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with an upcoming value of {params["past"]}. "f"Available parameters for past are: ?past= ('true' | 'false')"}), 404
-        
-        #tags parameter
-        if params["tags"]:
-            query = query.filter(Hackathon.tags == params["tags"])
-        
-        #q parameter will be added later
-        # if params["q"]:
-        #     query = query.filter(Hackathon.name == params["q"])
-        
-        #sort parameter
-        if params["sort"]:
-            if params["sort"] == "name":
-                query = query.order_by(Hackathon.name)
-            elif params["sort"] == "startDate":
-                query = query.order_by(Hackathon.startDate)
-            elif params["sort"] == "endDate":
-                query = query.order_by(Hackathon.endDate)
-            elif params["sort"] == "sumbittedAt":
-                query = query.order_by(Hackathon.submittedAt)
-            elif params["sort"] == "updatedAt":
-                query = query.order_by(Hackathon.updatedAt)
-            elif params["sort"] == "interestCount":
-                query = query.order_by(Hackathon.interestCount)
-                
-        results = query.all()
-        return [result.to_dict() for result in results]
-
-@app.route("/api/hackathons/<hackathon_id>",methods=['GET'])
-def find_hackathon(hackathon_id):
-    try:
-        hackathon = db.get_or_404(Hackathon, hackathon_id)
-        print(type(hackathon.startDate))
-        return jsonify(hackathon.to_dict())
-    except NotFound:
-        return jsonify(error={"Hackathon Not Found":"Wrong id"}),404
 
 def parse_parameters(method:str):
     now = datetime.now().replace(microsecond=0)
@@ -180,6 +105,85 @@ def validate_parameters(params:dict,method:str,hackathon_to_update:Hackathon = N
         return True,None
     if method == "POST":
         return True,params
+    
+@app.route("/api/hackathons",methods=["GET"])    
+def all_hackathons():
+    if request.method == "GET":
+        now = datetime.now().replace(microsecond=0) #Formats time like this: YYYY-MM-DD HH:MM:SS example: 2026-05-01 15:12:00
+        
+        params = {
+            "status" : request.args.get('status'),
+            "upcoming" : request.args.get('upcoming'),
+            "past" : request.args.get('past'),
+            "tags" : request.args.get('tags'),
+            "q" : request.args.get('q'),
+            "sort" : request.args.get('sort')
+        }
+        
+        query = db.session.query(Hackathon) # Arxiko query pou kanei build up stin sinexeia
+                                            # me vasi ta params pou exoun epistrafei
+            
+        #status parameter
+        if params["status"]:
+            if (params["status"] in (StatusEnum.draft.value, StatusEnum.pending.value, StatusEnum.published.value, StatusEnum.needs_changes.value)):
+                query = query.filter(Hackathon.status == params["status"])
+            else:
+                return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with a status of {params['status']}. "f"Available parameters for status are: ?status= ('draft' | 'pending' | 'published' | 'needs-changes')"}), 404
+        
+        #upcoming parameter fix Hackathon.startDate comparing value
+        if params["upcoming"] == "true":
+            query = query.filter(Hackathon.startDate > now)
+        elif params["upcoming"] == "false":
+            query = query.filter(Hackathon.startDate < now)
+        elif params["upcoming"]:
+            return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with an upcoming value of {params["upcoming"]}. "f"Available parameters for upcoming are: ?upcoming= ('true' | 'false')"}), 404
+        
+        #past parameter    
+        if params["past"] == "true":
+            query = query.filter(Hackathon.startDate < now)
+        elif params["past"] == "false":
+            query = query.filter(Hackathon.startDate > now)
+        elif params["past"]:
+            return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with an upcoming value of {params["past"]}. "f"Available parameters for past are: ?past= ('true' | 'false')"}), 404
+        
+        #tags parameter
+        if params["tags"]:
+            query = query.filter(Hackathon.tags == params["tags"])
+        
+        #q parameter will be added later
+        if params["q"]:
+            like = f"%{params["q"]}%"
+            
+            query = query.filter(Hackathon.name.ilike(like) | Hackathon.description.ilike(like) |
+                                 Hackathon.location.ilike(like) | Hackathon.organizer.ilike(like) | Hackathon.hasPrize.ilike(like) |
+                                 Hackathon.prizeDetails.ilike(like) | Hackathon.tags.ilike(like))
+        
+        #sort parameter
+        if params["sort"]:
+            if params["sort"] == "name":
+                query = query.order_by(Hackathon.name)
+            elif params["sort"] == "startDate":
+                query = query.order_by(Hackathon.startDate)
+            elif params["sort"] == "endDate":
+                query = query.order_by(Hackathon.endDate)
+            elif params["sort"] == "sumbittedAt":
+                query = query.order_by(Hackathon.submittedAt)
+            elif params["sort"] == "updatedAt":
+                query = query.order_by(Hackathon.updatedAt)
+            elif params["sort"] == "interestCount":
+                query = query.order_by(Hackathon.interestCount)
+                
+        results = query.all()
+        return [result.to_dict() for result in results]
+
+@app.route("/api/hackathons/<hackathon_id>",methods=['GET'])
+def find_hackathon(hackathon_id):
+    try:
+        hackathon = db.get_or_404(Hackathon, hackathon_id)
+        print(type(hackathon.startDate))
+        return jsonify(hackathon.to_dict())
+    except NotFound:
+        return jsonify(error={"Hackathon Not Found":"Wrong id"}),404
 
 @app.route("/api/<hackathon_id>",methods=['PATCH']) #future api/hackathons endpoint
 def update_hackathon(hackathon_id):
@@ -194,7 +198,6 @@ def update_hackathon(hackathon_id):
     if not(id):
         return jsonify(error={"Missing Fields": "id is required."}),400
     
-    #with app.app_context(): 
     try:
         hackathon_to_update = db.get_or_404(Hackathon,hackathon_id)
         result , error = validate_parameters(params,request.method,hackathon_to_update)

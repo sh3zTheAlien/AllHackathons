@@ -144,16 +144,20 @@ def delete_row(id):
         print(f"Successfully deleted row with an id: {id}.")
 
 
-#not ready yet
 def delete_rows(ids:list):
-    if not(ids):
-        raise ValueError("Sorry ids parameter is required")
+    # This code doesnt work at all, den ksero gt alla nai
+    # if not(ids):
+    #     raise ValueError("Sorry ids parameter is required")
     
     with app.app_context():
         for id in ids:
-            hackathon_to_delete = Hackathon.query.filter_by(id=id).first() #id is unique so .first() doesnt affect anywhere
+            try:
+                hackathon_to_delete = db.get_or_404(Hackathon,id)
+            except NotFound:
+                raise ValueError(f"Sorry there is no hackathon with an id of: {id} to delete.")
             db.session.delete(hackathon_to_delete)
         db.session.commit()
+        print(f"Successfully deleted selected rows.")
         
 def delete_all_rows():
     
@@ -212,6 +216,19 @@ def main():
     )
     
     parser.add_argument(
+        "--delete_rows",
+        action="store_true",
+        help="delete-rows-in-the-database"
+    )
+    
+    parser.add_argument(
+        "--ids",
+        nargs="+",
+        type=int,
+        help="delete-one-or-more-hackathons"
+    )
+    
+    parser.add_argument(
         "--delete_all_rows",
         action="store_true",
         help="delete-table-in-the-database"
@@ -266,6 +283,9 @@ def main():
     
     if args.delete_all_rows:
         return delete_all_rows()
+    
+    if args.delete_rows:
+        return delete_rows(args.ids)
     
     if args.delete_row:
         return delete_row(id=args.id)

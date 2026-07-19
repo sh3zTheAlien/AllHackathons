@@ -86,5 +86,6 @@ example_requests = [data1,data2,data3,data4,data5]
 def populate_db(request_data:list):
     for index,req in enumerate(request_data):
         requests.post("http://127.0.0.1:5000/api/hackathons", data=example_requests[index])
+    print("Seed completed successfully!")
         
 populate_db(example_requests)
