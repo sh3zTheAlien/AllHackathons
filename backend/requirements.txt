@@ -2,5 +2,7 @@ alembic
 Flask
 flask_alembic
 flask_sqlalchemy
+pytest
+Requests
 SQLAlchemy
 Werkzeug

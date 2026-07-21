@@ -62,5 +62,3 @@ class Hackathon(db.Model): #db has the model class=Base, we can add another base
             "updatedAt": self.updatedAt.isoformat() if self.updatedAt else None,
             "interestCount": self.interestCount,
         }
-        
-        
