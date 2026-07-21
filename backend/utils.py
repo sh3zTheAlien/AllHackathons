@@ -9,7 +9,9 @@ import enum
 
 today = datetime.now().replace(microsecond=0)
 tommorow = today + timedelta(days=1)
-#Refference for Flask Alembic --> https://flask-alembic.readthedocs.io/en/stable/api/    
+#Refference for Flask Alembic --> https://flask-alembic.readthedocs.io/en/stable/api/  
+allowed = ["name", "url", "description", "startDate", "endDate", "updatedAt", "submittedAt", "location", "mode",
+           "organizer", "hasPrize", "prizeDetails", "tags", "status", "interestCount"]  
 
 def current_migrations():
     """
@@ -41,48 +43,52 @@ def upgrade():
     with app.app_context():
         alembic.upgrade()
 
-def add_row(id=None,name=None,url=None,description=None,startDate=today,endDate=tommorow,location=None,mode=None,organizer=None,hasPrize : bool = None, prizeDetails = None, tags=None,status = None,submittedAt=today,updatedAt=today,interestCount : int = 0):
+def add_row(**kwargs):
     
     """"
     Manually add a row in Hackathons table.
     This function was implemented for test purposes only.
-    Note: id,name,url are required parameters for the function to work.
+    Note: name and url are required parameters for the function to work.
     """
     
-    if not(id) or not(name) or not(url):
-        raise ValueError("Sorry id,name,url params are required.")
-    
-    if mode is not None: #testing if mode contains one of the desired values
-        try:
-            mode = ModeEnum(mode)  #converts string "online" to ModeEnum.online
-        except ValueError:
-            raise ValueError(f"Wrong mode name: {mode}")
-
-    if status is not None: #testing if status contains one of the desired values
-        try:
-            status = StatusEnum(status)
-        except ValueError:
-            raise ValueError(f"Wrong status name: {status}")
+    if (kwargs["name"] is None) or (kwargs["url"] is None):
+        raise ValueError("name and url are required parameters")
     
     with app.app_context():
-        new_hackathon = Hackathon(id=id,name=name,url=url,description=description,startDate=startDate,endDate=endDate,location=location,mode=mode,
-                                  organizer=organizer,hasPrize=hasPrize,prizeDetails=prizeDetails,tags=tags,status=status,
-                                  submittedAt=submittedAt,updatedAt=updatedAt,interestCount=interestCount)
+        for key,value in kwargs.items():
+            if key in allowed and value is not None:
+                if key == "mode":
+                    try:
+                        value = ModeEnum(value)
+                    except ValueError:
+                        raise ValueError("Wrong mode")
+                    
+                if key == "status":
+                    try:
+                        value = StatusEnum(value)
+                    except ValueError:
+                        raise ValueError("Wrong status")
+                
+                if key == "hasPrize":
+                    if value.lower() == "true":
+                        value = True
+                        kwargs[key] = True
+                    elif value.lower() == "false":
+                        value = False
+                        kwargs[key] = False
+                        kwargs["prizeDetails"] = None #prizeDetails is None anyways IF hackathon doesnt have a prize
+                    else:
+                        raise ValueError("Wrong has Prize")
+        
+    
+        new_hackathon = Hackathon(name=kwargs["name"],url=kwargs["url"],description=kwargs["description"],startDate=kwargs["startDate"],endDate=kwargs["endDate"],location=kwargs["location"],mode=kwargs["mode"],
+                                    organizer=kwargs["organizer"],hasPrize=kwargs["hasPrize"],prizeDetails=kwargs["prizeDetails"],tags=kwargs["tags"],status=kwargs["status"],
+                                    submittedAt=kwargs["submittedAt"],updatedAt=kwargs["updatedAt"],interestCount=0)
         db.session.add(new_hackathon)
         db.session.commit()
-        print(f"Successfully added row with an id: {id} , name: {name} , url: {url}.")
-
-def check_constant_value(constant,constantEnum:enum.EnumMeta):
-    if constant is not None: #testing if status contains one of the desired values
-        try:
-            status = constantEnum(status)
-        except ValueError:
-            raise ValueError(f"Wrong status name: {status}")
-    return None
+        print("Successfully added row.")
 
 def update_row(id,**kwargs):
-    allowed = ["name", "url", "description", "startDate", "endDate", "updatedAt", "submittedAt", "location", "mode",
-           "organizer", "hasPrize", "prizeDetails", "tags", "status", "interestCount"]
     
     """"
     Manually update a row in Hackathons table.
@@ -252,7 +258,7 @@ def main():
     parser.add_argument("--prizeDetails", type=str, default=None)
     parser.add_argument("--tags", type=str, default=None)
     parser.add_argument("--status", type=str, default=None)
-    parser.add_argument("--interestCount", type=int, default=0)
+    parser.add_argument("--interestCount", type=int, default=None)
     
     
     args = parser.parse_args() #reads the actual text the user typed after the script name in the terminal
@@ -265,19 +271,19 @@ def main():
     
     kwargs = {
         "name": args.name,
-        "url": args.url,
         "description":args.description,
-        "location": args.location,
+        "url": args.url,
         "startDate": startDate,
         "endDate": endDate,
-        "updatedAt": updatedAt,
-        "submittedAt": submittedAt,
+        "location": args.location,
         "mode": args.mode,
         "organizer": args.organizer,
         "hasPrize": args.hasPrize,
         "prizeDetails": args.prizeDetails,
         "tags": args.tags,
         "status": args.status,
+        "submittedAt": submittedAt,
+        "updatedAt": updatedAt,
         "interestCount": args.interestCount,
     }    
     
@@ -291,14 +297,7 @@ def main():
         return delete_row(id=args.id)
         
     if args.add_row:
-        return add_row(
-            id=args.id, name=args.name, url=args.url,description=args.description,
-            startDate=startDate, endDate=endDate,
-            updatedAt=today,submittedAt=today,
-            location=args.location, mode=args.mode, organizer=args.organizer,
-            hasPrize=args.hasPrize, prizeDetails=args.prizeDetails, tags=args.tags,
-            status=args.status, interestCount=args.interestCount
-        )
+        return add_row(**kwargs)
     
     if args.update_row:
         return update_row(id=args.id,**kwargs)

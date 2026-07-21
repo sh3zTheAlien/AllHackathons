@@ -72,20 +72,26 @@ def parse_parameters(method:str):
     return True,params
 
 def validate_parameters(params:dict,method:str,hackathon_to_update:Hackathon = None):
+    
+    """
+    IMPORTANT NOTE: startDate and endDate values are getting validated in parse_parameters() func
+    """
+    
     for key,value in params.items():
         
         if (key in allowed) and value is not None:
-            if key == "mode":
-                try:
-                    value = ModeEnum(value)  #converts string "online" to ModeEnum.online
-                except ValueError:
-                    return False,"Wrong mode"
                 
             if key == "status":
                 try:
                     value = StatusEnum(value)
                 except ValueError:
                     return False,"Wrong status"
+            
+            if key == "mode":
+                try:
+                    value = ModeEnum(value)  #converts string "online" to ModeEnum.online
+                except ValueError:
+                    return False,"Wrong mode"
             
             if key == "hasPrize":
                 if value.lower() == "true":
@@ -130,7 +136,7 @@ def all_hackathons():
             else:
                 return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with a status of {params['status']}. "f"Available parameters for status are: ?status= ('draft' | 'pending' | 'published' | 'needs-changes')"}), 404
         
-        #upcoming parameter fix Hackathon.startDate comparing value
+        #upcoming parameter
         if params["upcoming"] == "true":
             query = query.filter(Hackathon.startDate > now)
         elif params["upcoming"] == "false":
@@ -150,7 +156,7 @@ def all_hackathons():
         if params["tags"]:
             query = query.filter(Hackathon.tags == params["tags"])
         
-        #q parameter will be added later
+        #q parameter
         if params["q"]:
             like = f"%{params["q"]}%"
             
@@ -174,14 +180,14 @@ def all_hackathons():
                 query = query.order_by(Hackathon.interestCount)
                 
         results = query.all()
-        return [result.to_dict() for result in results]
+        return [result.to_dict() for result in results],200
 
 @app.route("/api/hackathons/<hackathon_id>",methods=['GET'])
 def find_hackathon(hackathon_id):
     try:
         hackathon = db.get_or_404(Hackathon, hackathon_id)
         print(type(hackathon.startDate))
-        return jsonify(hackathon.to_dict())
+        return jsonify(hackathon.to_dict()),200
     except NotFound:
         return jsonify(error={"Hackathon Not Found":"Wrong id"}),404
 
@@ -230,6 +236,6 @@ def add_hackathon():
                                 submittedAt=value["submittedAt"],updatedAt=value["updatedAt"],interestCount=value["interestCount"])
         db.session.add(new_hackathon)
         db.session.commit()
-        return jsonify(response={"success":f"Successfully added hackathon:{value["name"]}!"})
+        return jsonify(response={"success":f"Successfully added hackathon:{value["name"]}!"}),200
     else:
         return jsonify(error={"error":f"{value}"}),400
