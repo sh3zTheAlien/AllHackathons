@@ -119,8 +119,8 @@ def all_hackathons():
         
         params = {
             "status" : request.args.get('status'),
-            "upcoming" : request.args.get('upcoming'),
-            "past" : request.args.get('past'),
+            "upcoming" : request.args.get('upcoming').lower() if request.args.get('upcoming') else None,
+            "past" : request.args.get('past').lower() if request.args.get('past') else None,
             "tags" : request.args.get('tags'),
             "q" : request.args.get('q'),
             "sort" : request.args.get('sort')
@@ -134,7 +134,7 @@ def all_hackathons():
             if (params["status"] in (StatusEnum.draft.value, StatusEnum.pending.value, StatusEnum.published.value, StatusEnum.needs_changes.value)):
                 query = query.filter(Hackathon.status == params["status"])
             else:
-                return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with a status of {params['status']}. "f"Available parameters for status are: ?status= ('draft' | 'pending' | 'published' | 'needs-changes')"}), 404
+                return jsonify(error="Wrong status"), 404
         
         #upcoming parameter
         if params["upcoming"] == "true":
@@ -142,7 +142,7 @@ def all_hackathons():
         elif params["upcoming"] == "false":
             query = query.filter(Hackathon.startDate < now)
         elif params["upcoming"]:
-            return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with an upcoming value of {params["upcoming"]}. "f"Available parameters for upcoming are: ?upcoming= ('true' | 'false')"}), 404
+            return jsonify(error="Wrong upcoming"), 404
         
         #past parameter    
         if params["past"] == "true":
@@ -150,8 +150,8 @@ def all_hackathons():
         elif params["past"] == "false":
             query = query.filter(Hackathon.startDate > now)
         elif params["past"]:
-            return jsonify(error={"Hackathon Not Found": f"Sorry, there is no hackathon with an upcoming value of {params["past"]}. "f"Available parameters for past are: ?past= ('true' | 'false')"}), 404
-        
+            return jsonify(error="Wrong past"), 404
+
         #tags parameter
         if params["tags"]:
             query = query.filter(Hackathon.tags == params["tags"])
@@ -180,7 +180,8 @@ def all_hackathons():
                 query = query.order_by(Hackathon.interestCount)
                 
         results = query.all()
-        return [result.to_dict() for result in results],200
+        data = [result.to_dict() for result in results]
+        return jsonify(data),200
 
 @app.route("/api/hackathons/<hackathon_id>",methods=['GET'])
 def find_hackathon(hackathon_id):
@@ -189,7 +190,7 @@ def find_hackathon(hackathon_id):
         print(type(hackathon.startDate))
         return jsonify(hackathon.to_dict()),200
     except NotFound:
-        return jsonify(error={"Hackathon Not Found":"Wrong id"}),404
+        return jsonify(error="Wrong id"),404
 
 @app.route("/api/<hackathon_id>",methods=['PATCH']) #future api/hackathons endpoint
 def update_hackathon(hackathon_id):
@@ -213,7 +214,7 @@ def update_hackathon(hackathon_id):
         else:
             return jsonify(error={"error":f"{error}"}),400    
     except NotFound:
-        return jsonify(error={"Hackathon Not Found":f"Wrong id"}),404
+        return jsonify(error="Wrong id"),404
     
 @app.route("/api/hackathons",methods=["POST"])
 def add_hackathon():
