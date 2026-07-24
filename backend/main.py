@@ -117,6 +117,8 @@ def all_hackathons():
     if request.method == "GET":
         now = datetime.now().replace(microsecond=0) #Formats time like this: YYYY-MM-DD HH:MM:SS example: 2026-05-01 15:12:00
         
+        #NOTE: REPLACE SOME PARAM QUERIES (tags,status) WITH ILIKE JUST SO IT IS EASIER TO FIND THE DESIRED PARAM
+        
         params = {
             "status" : request.args.get('status'),
             "upcoming" : request.args.get('upcoming').lower() if request.args.get('upcoming') else None,
