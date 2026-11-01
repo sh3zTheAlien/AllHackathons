@@ -301,7 +301,7 @@ def all_hackathons():
     now = datetime.now().replace(microsecond=0) #Formats time like this: YYYY-MM-DD HH:MM:SS example: 2026-05-01 15:12:00
 
     params = {
-        "status" : request.args.get('status').lower() if request.args.get('status') else 'published',
+        "status" : request.args.get('status').lower() if request.args.get('status') else "published",
         "upcoming" : request.args.get('upcoming').lower() if request.args.get('upcoming') else None,
         "past" : request.args.get('past').lower() if request.args.get('past') else None,
         "tags" : request.args.get('tags'),
