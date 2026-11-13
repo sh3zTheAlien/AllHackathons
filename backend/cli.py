@@ -58,13 +58,12 @@ def create_superadmin(username,email,password):
 @click.argument("password", required=True, help="The password of the new admin.")
 def create_admin(username,email,password):
     
+    #Checking if user is a superadmin by veryfying his password
     password = click.prompt("Please enter the super admin password to authorize this action", hide_input=True)
     result , error = is_superadmin(password)
-    if not result:
+    if not result: #result can only be False or True
         return click.echo(f"Authorization failed. Only super admins can create new admins. Error: {error}")
-    #print(is_superadmin(password))
-    
-    #is_superadmin() will be called here to check if the user is a superadmin before creating a new admin.
+
     ph = PasswordHasher()
     hashed_password = ph.hash(password)
     new_admin = Administrators(username=username, email=email, password=hashed_password, 
@@ -76,3 +75,37 @@ def create_admin(username,email,password):
         click.echo(f"Admin '{username}' created successfully.")
     except Exception as e:
         click.echo(f"Error creating admin: {e}")
+        
+@app.cli.command("update-admin")
+@click.argument("username", required=True, help="The username of the admin that you want to update.")
+@click.argument("email", required=True, help="The email of the admin that you want to update.")
+def update_admin(username,email):
+    
+    ph = PasswordHasher()
+    #Checking if user is a superadmin by veryfying his password
+    password = click.prompt("Please enter the super admin password to authorize this action", hide_input=True)
+    result , error = is_superadmin(password)
+    if not result:
+        return click.echo(f"Authorization failed. Only super admins can update admins. Error: {error}")
+
+	# Fetch the admin to update
+    admin_to_update = Administrators.query.filter_by(username=username, email=email).first()
+    
+	# Prompt superadmin to set new credentials for the admin he wants to update
+    new_username = click.prompt("Please enter the new username for the admin or press - to keep the current one", type=str)
+    new_username = None if new_username == "-" else new_username
+    new_email = click.prompt("Please enter the new email for the admin or press - to keep the current one", type=str)
+    new_email = None if new_email == "-" else new_email
+    new_password = click.prompt("Please enter the new password for the admin or press - to keep the current one", hide_input=False, type=str)
+    new_password = None if new_password == "-" else ph.hash(new_password)
+
+    try:
+		# Pass the new credentials for the admin to update
+        admin_to_update.username = new_username if new_username else admin_to_update.username
+        admin_to_update.email = new_email if new_email else admin_to_update.email
+        admin_to_update.password = new_password if new_password else admin_to_update.password
+        
+        db.session.commit()
+        click.echo(f"Admin '{username}' updated successfully.")
+    except Exception as e:
+        click.echo(f"Error updating admin: {e}")
