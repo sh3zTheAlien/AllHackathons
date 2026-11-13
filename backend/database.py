@@ -14,6 +14,10 @@ MAX_ORGANIZER_CHARACTERS = 200
 MAX_PRIZE_DETAILS_CHARACTERS = 200
 MAX_TAGS_CHARACTERS = 200
 
+MAX_USERNAME_CHARACTERS = 100
+MAX_EMAIL_CHARACTERS = 80
+MAX_PASSWORD_CHARACTERS = 255
+
 class Base(DeclarativeBase):
     pass
 
@@ -31,10 +35,84 @@ class ModeEnum(enum.Enum):
     in_person = "in_person"
     online = "online"
     hybrid = "hybrid"
+    
+class RequestStatusEnum(enum.Enum):
+    invited = "invited"
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+    disabled = "disabled"
+
+#I am letting request_status , status , mode to be tested by Enum here correct it if you dont feel safe enough :=)
+class SuperAdmin(db.Model):
+	__tablename__ = "superadmin"
+ 
+	id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+	username: Mapped[str] = mapped_column(String(MAX_USERNAME_CHARACTERS), unique=True, nullable=False)
+	email: Mapped[str] = mapped_column(String(MAX_EMAIL_CHARACTERS), unique=True, nullable=False)
+	password: Mapped[str] = mapped_column(String(MAX_PASSWORD_CHARACTERS), unique=True, nullable=False)
+	joined: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+	last_login: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+	admins_approved: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+	admins_rejected: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+	hackathons_approved: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+	hackathons_rejected: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+ 
+	__table_args__ = (CheckConstraint("id = 1", name="only_one_super_admin"),
+     				  CheckConstraint(f'hackathons_approved >= 0', name='check_hackathons_approved_is_positive_number'),
+					  CheckConstraint(f'hackathons_rejected >= 0', name='check_hackathons_rejected_is_positive_number'),
+					  CheckConstraint(f'admins_approved >= 0', name='check_admins_approved_is_positive_number'),
+       				  CheckConstraint(f'admins_rejected >= 0', name='check_admins_rejected_is_positive_number'))
+ 
+class Administrators(db.Model):
+    __tablename__ = "administrators"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(MAX_USERNAME_CHARACTERS), nullable=False, unique=True)
+    email: Mapped[str] = mapped_column(String(MAX_EMAIL_CHARACTERS), nullable=False, unique=True)
+    password: Mapped[str] = mapped_column(String(MAX_PASSWORD_CHARACTERS), nullable=False)
+    joined: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    last_login: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    hackathons_approved: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    hackathons_rejected: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    request_status: Mapped[RequestStatusEnum] = mapped_column(Enum(RequestStatusEnum), nullable=False, default=RequestStatusEnum.pending.value)
+    
+    __table_args__ = (CheckConstraint(f'hackathons_approved >= 0', name='check_hackathons_approved_positive_number'),
+                      CheckConstraint(f'hackathons_rejected >= 0', name='check_hackathons_rejected_positive_number'))
+
+    @validates("username")
+    def validate_username(self, key, value):
+        if value is not None and len(value) > MAX_USERNAME_CHARACTERS:
+            raise ValueError(f"username must contain {MAX_USERNAME_CHARACTERS} characters or less.")
+        return value
+    
+    @validates("email")
+    def validate_email(self, key, value):
+        if value is not None and len(value) > MAX_EMAIL_CHARACTERS:
+            raise ValueError(f"email must contain {MAX_EMAIL_CHARACTERS} characters or less.")
+        return value
+    
+    @validates("password")
+    def validate_password(self, key, value):
+        if value is not None and len(value) > MAX_PASSWORD_CHARACTERS:
+            raise ValueError(f"password must contain {MAX_PASSWORD_CHARACTERS} characters or less.")
+        return value
+    
+    def to_dict(self):
+        return{
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "joined": self.joined,
+            "last_login": self.last_login,
+            "hackathons_approved": self.hackathons_approved,
+            "hackathons_rejected": self.hackathons_rejected,
+            "request_status": self.request_status.value
+        }
 
 class Hackathon(db.Model): #db has the model class=Base, we can add another base later for our next table
     __tablename__ = "hackathon"
-    id: Mapped[str] = mapped_column(Integer,primary_key=True,autoincrement=True) #autoincrement increases id number by 1 each time a new hackathon gets added
+    id: Mapped[int] = mapped_column(Integer,primary_key=True,autoincrement=True) #autoincrement increases id number by 1 each time a new hackathon gets added
     name: Mapped[str] = mapped_column(String(MAX_NAME_CHARACTERS),nullable=False) #name REQUIRED
     description: Mapped[str] = mapped_column(String(MAX_DESCRIPTION_CHARACTERS),nullable=True)
     url: Mapped[str] = mapped_column(String(MAX_URL_CHARACTERS),nullable=False) #official link REQUIRED

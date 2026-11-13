@@ -144,7 +144,7 @@ def validate_parameters2(params:dict,method:str,hackathon_to_update:Hackathon = 
                             "hasPrize": None,
                             "prizeDetails": None,
                             "tags": None,
-                            "status": None,
+                            "status": "published",
                             "submittedAt": None,
                             "updatedAt": None,
                             "interestCount": None,
