@@ -131,7 +131,7 @@ def parse_parameters(method:str):
 
 def validate_parameters2(params:dict,method:str,hackathon_to_update:Hackathon = None):
     
-    if method == "POST":
+    if method == "POST" or method == "cli-command-post":
         validated_parameters = {
                             "name": None,
                             "description":None,
@@ -208,7 +208,7 @@ def validate_parameters2(params:dict,method:str,hackathon_to_update:Hackathon = 
                 
         return True, validated_parameters
     
-    elif method == "PATCH":
+    elif method == "PATCH" or method == "cli-command-patch":
         validated_parameters = {
                                 "name": hackathon_to_update.name,
                                 "description":hackathon_to_update.description,
