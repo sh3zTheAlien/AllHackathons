@@ -144,7 +144,31 @@ The backend applies a number of validation checks:
 
 ## Data models
 
-# Hackathon Table
+### SuperAdmin
+
+- `id`
+- `username`
+- `email`
+- `password`
+- `joined`
+- `last-login`
+- `admins_approved`
+- `admins_rejected`
+- `hackathons_approved`
+- `hackathons_rejected`
+
+### Admin
+
+- `id`
+- `username`
+- `email`
+- `password`
+- `joined`
+- `last-login`
+- `hackathons_approved`
+- `hackathons_rejected`
+
+### Hackathon
 
 - `id`
 - `name`
