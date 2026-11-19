@@ -1,7 +1,7 @@
 import click
 import json
 from main import app, validate_parameters2
-from database import db, Hackathon ,Administrators, SuperAdmin
+from database import db, Hackathon ,Admin, SuperAdmin
 from sqlalchemy import select, exists
 from datetime import datetime
 from argon2 import PasswordHasher
@@ -27,7 +27,7 @@ def is_superadmin(superadmin_password_given,superadmin_username_given=None):
     
 def is_admin(admin_name:str,admin_password:str):
     
-    admin_name2 = Administrators.query.filter_by(username=admin_name).first()
+    admin_name2 = Admin.query.filter_by(username=admin_name).first()
     if not admin_name2:
         return False , "Admin not found."
     
@@ -64,7 +64,7 @@ def superadmin_table_is_empty():
 
 @app.cli.command("list-admins")
 def list_admins():
-	all_admins = Administrators.query.all()
+	all_admins = Admin.query.all()
 	
 	#Checking if all_admins are empty or not
 	if not all_admins: 
@@ -118,7 +118,7 @@ def create_admin(username,email,password):
  	# Hash the password and create a new admin instance
     ph = PasswordHasher()
     hashed_password = ph.hash(password)
-    new_admin = Administrators(username=username, email=email, password=hashed_password, 
+    new_admin = Admin(username=username, email=email, password=hashed_password, 
                                joined=datetime.now(),last_login=datetime.now())
 
     try:
@@ -145,7 +145,7 @@ def update_admin(username,email):
         return click.echo(f"Authorization failed. Only super admins can update admins. Error: {error}")
 
 	# Fetch the admin to update
-    admin_to_update = Administrators.query.filter_by(username=username, email=email).first()
+    admin_to_update = Admin.query.filter_by(username=username, email=email).first()
     
 	# Prompt superadmin to set new credentials for the admin he wants to update
     new_username = click.prompt("Please enter the new username for the admin or press - to keep the current one", type=str)
@@ -183,7 +183,7 @@ def delete_admin(username,email):
         return click.echo(f"Authorization failed. Only super admins can delete admins. Error: {error}")
 
 	# Fetch the admin to delete
-    admin_to_delete = Administrators.query.filter_by(username=username, email=email).first()
+    admin_to_delete = Admin.query.filter_by(username=username, email=email).first()
 
     try:
 		# Delete the admin from the database
@@ -216,7 +216,7 @@ def list_all_hackathons():
     for hackathon in all_hackathons:
         click.echo(f"{hackathon.name} | {hackathon.description} | {hackathon.url} | {hackathon.startDate} | {hackathon.endDate} | {hackathon.status.value} \n")
 
-@app.cli.command("create-hackathon")
+@app.cli.command("add-hackathon")
 @click.option("--name", required=True, help="The name of the hackathon.")
 @click.option("--url", required=True, help="The URL of the hackathon.")
 @click.option("--description", required=False, help="The description of the hackathon.")

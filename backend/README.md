@@ -20,6 +20,7 @@ The service currently supports:
 - `main.py` — Flask app, route definitions, request parsing, and validation logic
 - `database.py` — SQLAlchemy model definitions and enum values for hackathons
 - `utils.py` — helper functions for manual database operations and CLI-based maintenance
+- `cli.py` — CRUD operation functions for Admin Panel and Hackathons configuration
 - `seed.py` — sample data seeding script for local testing
 - `tests/` — pytest cases covering create, read, filter, and update behavior
 - `migrations/` — Alembic migration files
@@ -134,16 +135,16 @@ curl -X PATCH http://localhost:5000/api/1 \
 The backend applies a number of validation checks:
 
 - `name` and `url` are required when creating a new hackathon
-- `status` must be one of the allowed enum values
+- `status` must be one of `draft`, `pending`, `published`, `needs_changes`
 - `mode` must be one of `in_person`, `online`, or `hybrid`
 - `hasPrize` must be `true` or `false`
 - `prizeDetails` is only allowed when `hasPrize` is `true`
 - `interestCount` must be an integer between `0` and `10000`
 - Dates must follow the `YYYY-MM-DD HH:MM:SS` format
 
-## Data model
+## Data models
 
-Each hackathon record contains:
+# Hackathon Table
 
 - `id`
 - `name`
@@ -169,23 +170,23 @@ The backend uses SQLite by default and initializes the database on startup.
 Useful commands:
 
 ```bash
-# Migration helpers
+# Migration helpers written in utils.py
 python utils.py --migrate
 python utils.py --upgrade
 python utils.py --current_migrations
-
-# Manual database row operations
-python utils.py --add_row --name "Example Hackathon" --url "https://example.com" --status published --mode hybrid --hasPrize true --prizeDetails "1000 USD"
-python utils.py --update_row --id 1 --name "Updated Hackathon" --status pending
-python utils.py --delete_row --id 1
 python utils.py --delete_rows --ids 1 2 3
 python utils.py --delete_all_rows
 python utils.py --cleanup_db
+
+# Manual database row operations via flask cli
+python --app cli add-hackathon --name "Example Hackathon" --url "https://example.com" --status published --mode hybrid --location "Drama"
+python utils.py update-hackathon --hackathon_id 1 --name "Updated Hackathon" --status pending
+python --app cli delete-hackathon --hackathon_id 1
 ```
 
 Notes:
 
-- `--add_row` and `--update_row` accept the same core fields as the API, including `name`, `url`, `description`, `startDate`, `endDate`, `location`, `mode`, `organizer`, `hasPrize`, `prizeDetails`, `tags`, `status`, `submittedAt`, `updatedAt`, and `interestCount`.
+- `add_hackathon` and `update-hackathon` accept the same core fields as the API, including `name`, `url`, `description`, `startDate`, `endDate`, `location`, `mode`, `organizer`, `hasPrize`, `prizeDetails`, `tags`, `status`, `submittedAt`, `updatedAt`, and `interestCount`.
 - `--delete_all_rows` will prompt for confirmation before removing the entire table.
 - `--cleanup_db` drops the database schema and removes the session state for testing or reset workflows.
 

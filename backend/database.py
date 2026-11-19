@@ -64,8 +64,8 @@ class SuperAdmin(db.Model):
 					  CheckConstraint(f'admins_approved >= 0', name='check_admins_approved_is_positive_number'),
        				  CheckConstraint(f'admins_rejected >= 0', name='check_admins_rejected_is_positive_number'))
  
-class Administrators(db.Model):
-    __tablename__ = "administrators"
+class Admin(db.Model):
+    __tablename__ = "admin"
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(String(MAX_USERNAME_CHARACTERS), nullable=False, unique=True)
@@ -75,7 +75,7 @@ class Administrators(db.Model):
     last_login: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     hackathons_approved: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     hackathons_rejected: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    request_status: Mapped[RequestStatusEnum] = mapped_column(Enum(RequestStatusEnum), nullable=False, default=RequestStatusEnum.pending.value)
+    #request_status: Mapped[RequestStatusEnum] = mapped_column(Enum(RequestStatusEnum), nullable=False, default=RequestStatusEnum.pending.value)
     
     __table_args__ = (CheckConstraint(f'hackathons_approved >= 0', name='check_hackathons_approved_positive_number'),
                       CheckConstraint(f'hackathons_rejected >= 0', name='check_hackathons_rejected_positive_number'))
@@ -107,7 +107,7 @@ class Administrators(db.Model):
             "last_login": self.last_login,
             "hackathons_approved": self.hackathons_approved,
             "hackathons_rejected": self.hackathons_rejected,
-            "request_status": self.request_status.value
+            #"request_status": self.request_status.value
         }
 
 class Hackathon(db.Model): #db has the model class=Base, we can add another base later for our next table
